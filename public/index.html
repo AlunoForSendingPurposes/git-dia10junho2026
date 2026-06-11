@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerenciador de Tarefas</title>
+</head>
+<body>
+
+    <h1>Minhas Tarefas</h1>
+    
+    <!-- Formulario POST -->
+    <div>
+        <input type="text" id="novaTarefa" placeholder="Nova tarefa...">
+        <button onclick="criarTarefa()">Adicionar</button>
+    </div>
+
+    <!-- Lista de Tarefas (GET / PUT / DELETE) -->
+    <ul id="listaTarefas"></ul>
+
+    <script>
+        const API_URL = '/api/tarefas';
+
+        // Carregar tarefas (GET)
+        async function carregarTarefas() {
+            const res = await fetch(API_URL);
+            const tarefas = await res.json();
+            const lista = document.getElementById('listaTarefas');
+            lista.innerHTML = '';
+
+            tarefas.forEach(t => {
+                const checked = t.concluido == 1 ? 'checked' : '';
+                const estilo = t.concluido == 1 ? 'style="text-decoration: line-through;"' : '';
+                
+                lista.innerHTML += `
+                    <li>
+                        <input type="checkbox" ${checked} onchange="alternarStatus(${t.id}, ${t.concluido})">
+                        <span ${estilo}>${t.titulo}</span>
+                        <button onclick="deletarTarefa(${t.id})">Excluir</button>
+                    </li>
+                `;
+            });
+        }
+
+        // Criar Tarefa (POST)
+        async function criarTarefa() {
+            const input = document.getElementById('novaTarefa');
+            if (!input.value.trim()) return;
+
+            await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ titulo: input.value })
+            });
+
+            input.value = '';
+            carregarTarefas();
+        }
+
+        // Atualizar Status (PUT)
+        async function alternarStatus(id, statusAtual) {
+            const novoStatus = statusAtual == 1 ? 0 : 1;
+            await fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ concluido: novoStatus })
+            });
+            carregarTarefas();
+        }
+
+        // Deletar Tarefa (DELETE)
+        async function deletarTarefa(id) {
+            if (confirm('Deseja excluir esta tarefa?')) {
+                await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+                carregarTarefas();
+            }
+        }
+
+        // Inicializa a lista
+        carregarTarefas();
+    </script>
+</body>
+</html>
